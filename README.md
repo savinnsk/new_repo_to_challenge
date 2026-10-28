@@ -40,3 +40,11 @@ Estado inicial: estrutura de desenvolvimento criada. Funcionalidades serão regi
 Prioridades e prazos do Anexo A; calendário segunda a sexta, 8h–18h, São Paulo, sem feriados. Dia útil = 10 horas de expediente; crítica = 1 hora corrida. Complemento de funcionário não renova prazo do suporte. Reabertura até 168 horas inclusive. Rascunho confirmado grava uma única vez, mesmo com repetição da requisição; editar exige nova confirmação. Semelhança de títulos auxilia a deduplicação, mas ambiguidades precisam de seleção explícita.
 
 Seeds preservam dados existentes e calculam datas relativas apenas na primeira inserção. Para recriar uma demonstração envelhecida, faça backup e remova manualmente o banco local antes do seed.
+
+## Agente e API
+
+Mastra com `openai/gpt-4.1-mini` configurável por `LLM_MODEL`: escolha inicial por latência/custo para triagem com ferramentas; não há benchmark de qualidade real ainda. Até 5 passos, 900 tokens por geração e 24 mensagens de contexto, com timeout de 45 segundos. Detalhes das ações são persistidos; confiança qualitativa não é probabilidade calibrada. Consulte [documentação oficial de ferramentas Mastra](https://mastra.ai/docs/agents/tools).
+
+Sessão = conversa por dia de São Paulo, até 30 mensagens do funcionário; respostas, eventos e confirmações por botão não contam. Dia seguinte renova quota e mantém histórico. Cookies HttpOnly/SameSite, token armazenado como hash, validação de origem e rate limit protegem o protótipo; login é simulado e não deve ser usado em produção.
+
+O serviço legado permite falha reproduzível por `LEGACY_FAILURE_MS`, espera com backoff e no máximo três tentativas; gravações confirmadas são idempotentes por rascunho. Consulte a API através de `/api` no Next.js para manter cookies no mesmo domínio.
