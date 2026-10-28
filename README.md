@@ -34,3 +34,9 @@ npm run build
 Decisões: [ADRs](docs/adr/README.md). Requisitos e sequência: [prompt.md](prompt.md).
 
 Estado inicial: estrutura de desenvolvimento criada. Funcionalidades serão registradas conforme forem implementadas.
+
+## Regras implementadas no domínio
+
+Prioridades e prazos do Anexo A; calendário segunda a sexta, 8h–18h, São Paulo, sem feriados. Dia útil = 10 horas de expediente; crítica = 1 hora corrida. Complemento de funcionário não renova prazo do suporte. Reabertura até 168 horas inclusive. Rascunho confirmado grava uma única vez, mesmo com repetição da requisição; editar exige nova confirmação. Semelhança de títulos auxilia a deduplicação, mas ambiguidades precisam de seleção explícita.
+
+Seeds preservam dados existentes e calculam datas relativas apenas na primeira inserção. Para recriar uma demonstração envelhecida, faça backup e remova manualmente o banco local antes do seed.
