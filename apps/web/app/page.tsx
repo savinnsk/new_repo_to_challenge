@@ -5,6 +5,7 @@ import type { Conversation, ConversationDetail, TicketInput, User } from '@nexo/
 import { api, streamMessage } from '../lib/api';
 import { Avatar, Badge, Logo, MessageBubble, TicketCard } from '../components/shared';
 import { DraftCard } from '../components/draft-card';
+import { AnalystConsole } from '../components/analyst-console';
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [configured, setConfigured] = useState(true);
@@ -12,7 +13,7 @@ export default function Home() {
   async function logout() { try { await api('/auth/logout', 'POST'); setUser(null); } catch (e) { setError((e as Error).message); } }
   if (loading) return <main className="loading"><Logo/><p>Carregando seu atendimento…</p></main>;
   if (!user) return <Login onLogin={async value => { setUser(value); const data = await api<{agentConfigured:boolean}>('/auth/me'); setConfigured(data.agentConfigured); }}/ >;
-  if (user.role === 'analyst') return <main className="loading"><Logo/><p>Console do analista será conectado no próximo marco.</p><button onClick={()=>void logout()}>Sair</button></main>;
+  if (user.role === 'analyst') return <AnalystConsole user={user} onLogout={logout}/>;
   return <EmployeeChat user={user} configured={configured} onLogout={logout} globalError={error}/>;
 }
 function Login({ onLogin }: { onLogin: (user: User) => Promise<void> }) {

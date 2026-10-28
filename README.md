@@ -52,3 +52,5 @@ O serviço legado permite falha reproduzível por `LEGACY_FAILURE_MS`, espera co
 ## Demonstração
 
 Use qualquer senha não vazia para `ana.souza@nexo.com.br` ou `carla.mendes@nexo.com.br`. O perfil mostra a identidade autenticada. No chat, consulte cards, selecione um chamado, converse para preparar um rascunho, revise os campos e confirme. Ações e evidências ficam em “Ver detalhes das decisões”. Sem chave do modelo é possível ver os chamados e solicitar transferência.
+
+Para o console, entre como `rafael.lima@nexo.com.br` (ou `bruno.tavares@nexo.com.br`) com qualquer senha. Em outra janela/sessão de navegador, entre como Ana e clique em “Falar com analista”. O console atualiza a fila a cada 3 segundos. Assuma, responda e devolva ao agente ou encerre. Dois analistas não podem assumir a mesma conversa. A próxima conversa pode ser iniciada pelo funcionário após o encerramento.
