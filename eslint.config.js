@@ -5,6 +5,18 @@ export default ts.config(
   js.configs.recommended,
   ...ts.configs.recommended,
   {
+    files: ["script/*.mjs"],
+    languageOptions: {
+      globals: {
+        process: "readonly",
+        console: "readonly",
+        URL: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+      },
+    },
+  },
+  {
     files: ["**/*.{ts,tsx}"],
     rules: {
       "@typescript-eslint/no-unused-vars": [

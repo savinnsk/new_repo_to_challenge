@@ -29,14 +29,31 @@ Abra http://localhost:3000. Health check: http://localhost:3001/api/health. O sc
 
 Ambos os projetos carregam o `.env` da raiz. Mudanças de ambiente exigem reiniciar os processos. O destino do proxy também é usado no build do frontend.
 
-Para executar o build local:
+## Build e execução em modo de produção
+
+Configure o `.env` da raiz a partir de `.env.example`. Depois, na raiz:
 
 ```sh
-npm run build
-# Em dois terminais:
-npm run start -w @nexo/api
-npm run start -w @nexo/web
+npm run prod
 ```
+
+Esse comando instala as dependências com `npm ci --include=dev`, gera os builds e inicia API e frontend em primeiro plano, com `NODE_ENV=production`. Para fazer as etapas separadamente:
+
+```sh
+npm run build:prod
+npm run start:prod
+```
+
+Os arquivos ficam em `script/`; também podem ser executados diretamente, inclusive a partir de outra pasta:
+
+```sh
+node /caminho/do/projeto/script/build.mjs
+node /caminho/do/projeto/script/start.mjs
+```
+
+A interface usa `PORT` (3000 por padrão) e `WEB_HOST` (`0.0.0.0`); a API permanece acessível localmente em `API_PORT` (3001). Ajuste `API_ORIGIN` antes do build se mudar a porta da API, e `WEB_ORIGIN` para a origem usada no navegador. Para HTTPS, configure `COOKIE_SECURE=true`. Preserve o arquivo SQLite no caminho de `DATABASE_PATH`. Schema e seeds são inicializados pela API, sem apagar dados existentes.
+
+O processo fica no terminal, exibe logs e encerra os dois serviços com Ctrl+C ou SIGTERM. Se um serviço falhar, o outro também será encerrado e o comando retornará erro. Execute o build com a aplicação parada: ele reinstala `node_modules` e substitui os artefatos. `start:prod` reutiliza o build existente e não instala dependências. Esses scripts executam a aplicação em modo de produção; a autenticação continua sendo a demonstração prevista pelo desafio.
 
 ## Contas e roteiro de demonstração
 

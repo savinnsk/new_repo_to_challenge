@@ -18,3 +18,7 @@
 - Confirmação de rascunho crítico durante pausa do agente e testes da fronteira de reabertura.
 - Formatação consistente, componentes separados, schemas de saída completos e métricas do provedor.
 - README de execução e demonstração, premissas documentadas e matriz de avaliação com limitações explícitas.
+
+### Changed
+
+- Scripts em `script/` para instalar e buildar, iniciar API e frontend em produção e executar o fluxo completo com encerramento coordenado.
