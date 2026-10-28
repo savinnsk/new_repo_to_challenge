@@ -1,0 +1,66 @@
+name: nexo-prod
+
+services:
+  api:
+    build:
+      context: .
+      target: api
+    init: true
+    restart: unless-stopped
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: "3001"
+      DATABASE_PATH: /data/nexo.sqlite
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-openai/gpt-4.1-mini}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      LEGACY_FAILURE_MS: ${LEGACY_FAILURE_MS:-0}
+    volumes:
+      - prod-data:/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+    stop_grace_period: 20s
+
+  web:
+    build:
+      context: .
+      target: web
+      args:
+        API_ORIGIN: http://api:3001
+    init: true
+    restart: unless-stopped
+    environment:
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+    ports:
+      - "127.0.0.1:${DOCKER_WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    stop_grace_period: 20s
+
+volumes:
+  prod-data:

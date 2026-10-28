@@ -1,0 +1,87 @@
+name: nexo-dev
+
+services:
+  api:
+    build:
+      context: .
+      target: dev
+    init: true
+    working_dir: /app/apps/api
+    command:
+      ["node", "../../node_modules/tsx/dist/cli.mjs", "watch", "src/server.ts"]
+    environment:
+      NODE_ENV: development
+      API_HOST: 0.0.0.0
+      API_PORT: "3001"
+      DATABASE_PATH: /data/nexo.sqlite
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-openai/gpt-4.1-mini}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      LEGACY_FAILURE_MS: ${LEGACY_FAILURE_MS:-0}
+    ports:
+      - "127.0.0.1:${DOCKER_API_PORT:-3001}:3001"
+    volumes:
+      - ./apps/api/src:/app/apps/api/src:ro
+      - ./packages/contracts/src:/app/packages/contracts/src:ro
+      - dev-data:/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+    stop_grace_period: 20s
+
+  web:
+    build:
+      context: .
+      target: dev
+    init: true
+    working_dir: /app/apps/web
+    command:
+      [
+        "node",
+        "../../node_modules/next/dist/bin/next",
+        "dev",
+        "--hostname",
+        "0.0.0.0",
+      ]
+    environment:
+      NODE_ENV: development
+      PORT: "3000"
+      API_ORIGIN: http://api:3001
+    ports:
+      - "127.0.0.1:${DOCKER_WEB_PORT:-3000}:3000"
+    volumes:
+      - ./apps/web/app:/app/apps/web/app:ro
+      - ./apps/web/components:/app/apps/web/components:ro
+      - ./apps/web/lib:/app/apps/web/lib:ro
+      - ./apps/web/next.config.ts:/app/apps/web/next.config.ts:ro
+      - ./apps/web/tsconfig.json:/app/apps/web/tsconfig.json:ro
+      - ./packages/contracts/src:/app/packages/contracts/src:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    stop_grace_period: 20s
+
+volumes:
+  dev-data:

@@ -18,11 +18,15 @@
     "test": "npm run test -w @nexo/api",
     "seed": "npm run seed -w @nexo/api",
     "test:e2e": "playwright test",
-    "format": "prettier --write apps packages script tests playwright.config.ts eslint.config.js",
-    "format:check": "prettier --check apps packages script tests playwright.config.ts eslint.config.js",
+    "format": "prettier --write apps packages script tests playwright.config.ts eslint.config.js compose.dev.yaml compose.prod.yaml",
+    "format:check": "prettier --check apps packages script tests playwright.config.ts eslint.config.js compose.dev.yaml compose.prod.yaml",
     "build:prod": "node script/build.mjs",
     "start:prod": "node script/start.mjs",
-    "prod": "node script/prod.mjs"
+    "prod": "node script/prod.mjs",
+    "docker:dev": "docker compose -f compose.dev.yaml up --build",
+    "docker:dev:down": "docker compose -f compose.dev.yaml down",
+    "docker:prod": "docker compose -f compose.prod.yaml up --build -d --wait",
+    "docker:prod:down": "docker compose -f compose.prod.yaml down"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

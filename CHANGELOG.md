@@ -4,6 +4,8 @@
 
 ### Added
 
+- Dockerfile multi-stage e Compose separados para dev com recarga automática e prod com frontend standalone, health checks e volumes SQLite independentes.
+
 - Estrutura Node.js/Fastify, Next.js e contratos compartilhados em TypeScript estrito.
 - Configuração de desenvolvimento, verificações e decisão de arquitetura.
 - Banco SQLite com schema versionado e seeds reproduzíveis de funcionários, chamados e seis artigos.
@@ -20,5 +22,7 @@
 - README de execução e demonstração, premissas documentadas e matriz de avaliação com limitações explícitas.
 
 ### Changed
+
+- API aceita `API_HOST` para comunicação entre containers, preservando o padrão local.
 
 - Scripts em `script/` para instalar e buildar, iniciar API e frontend em produção e executar o fluxo completo com encerramento coordenado.

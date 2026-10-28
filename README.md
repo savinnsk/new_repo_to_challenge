@@ -22,6 +22,7 @@ Abra http://localhost:3000. Health check: http://localhost:3001/api/health. O sc
 | `LLM_MODEL` | Modelo Mastra; padrão `openai/gpt-4.1-mini` |
 | `DATABASE_PATH` | Arquivo SQLite; padrão `../../data/nexo.sqlite`, relativo a `apps/api` |
 | `API_PORT` | Porta da API; padrão 3001 |
+| `API_HOST` | Interface da API; padrão `127.0.0.1` no host |
 | `API_ORIGIN` | Destino do proxy Next.js; padrão `http://localhost:3001` |
 | `WEB_ORIGIN` | Origem aceita para mutações; padrão `http://localhost:3000` |
 | `COOKIE_SECURE` | `true` em ambiente HTTPS; `false` no desenvolvimento HTTP |
@@ -54,6 +55,50 @@ node /caminho/do/projeto/script/start.mjs
 A interface usa `PORT` (3000 por padrão) e `WEB_HOST` (`0.0.0.0`); a API permanece acessível localmente em `API_PORT` (3001). Ajuste `API_ORIGIN` antes do build se mudar a porta da API, e `WEB_ORIGIN` para a origem usada no navegador. Para HTTPS, configure `COOKIE_SECURE=true`. Preserve o arquivo SQLite no caminho de `DATABASE_PATH`. Schema e seeds são inicializados pela API, sem apagar dados existentes.
 
 O processo fica no terminal, exibe logs e encerra os dois serviços com Ctrl+C ou SIGTERM. Se um serviço falhar, o outro também será encerrado e o comando retornará erro. Execute o build com a aplicação parada: ele reinstala `node_modules` e substitui os artefatos. `start:prod` reutiliza o build existente e não instala dependências. Esses scripts executam a aplicação em modo de produção; a autenticação continua sendo a demonstração prevista pelo desafio.
+
+## Docker: desenvolvimento e produção
+
+Requer Docker Engine/Docker Desktop com Docker Compose v2.20+. Node.js não precisa estar instalado no host. Crie o `.env` com `cp .env.example .env` e configure a chave do modelo quando for usar o agente. O Compose lê esse arquivo e injeta as variáveis necessárias na API; a chave não vai para o frontend nem para as imagens.
+
+**Desenvolvimento**, com recarga automática do código:
+
+```sh
+docker compose -f compose.dev.yaml up --build
+# Encerrar e remover os containers, preservando o banco:
+docker compose -f compose.dev.yaml down
+```
+
+Abra http://localhost:3000. A API de desenvolvimento também fica disponível em http://localhost:3001/api/health. As pastas de código são montadas como somente leitura; arquivos gerados e dependências ficam dentro dos containers. Alterações em código são acompanhadas pelo Next.js e `tsx watch`. Depois de mudar dependências, manifests, lockfile ou variáveis do `.env`, execute novamente `up --build` para recriar o ambiente.
+
+**Produção**, com builds multi-stage e frontend standalone:
+
+```sh
+docker compose -f compose.prod.yaml up --build -d --wait
+docker compose -f compose.prod.yaml ps
+docker compose -f compose.prod.yaml logs -f
+# Encerrar, preservando o banco:
+docker compose -f compose.prod.yaml down
+```
+
+Abra http://localhost:3000. Somente o frontend é publicado no host; ele encaminha `/api` para `http://api:3001` pela rede interna. A API não precisa de porta publicada em produção. Os dois serviços rodam com usuário sem privilégios, health checks e política de reinício. Não há montagem de código do host nas imagens de produção.
+
+Atalhos equivalentes para quem tem npm no host: `npm run docker:dev`, `npm run docker:dev:down`, `npm run docker:prod` e `npm run docker:prod:down`.
+
+Dev e prod possuem nomes de projeto e volumes separados (`nexo-dev`/`dev-data` e `nexo-prod`/`prod-data`). O banco fica em `/data/nexo.sqlite` no volume da API e sobrevive à recriação dos containers. `down` mantém esses dados; **`down --volumes` apaga o banco daquele ambiente**. O banco local de `data/` não é usado nem alterado pelo Docker. Schema e seeds são inicializados automaticamente na primeira execução.
+
+Ambos os ambientes usam as portas 3000/3001 por padrão; execute um por vez ou ajuste `DOCKER_WEB_PORT` e `DOCKER_API_PORT`. Ao mudar a porta pública do frontend, ajuste também `WEB_ORIGIN` (por exemplo, `http://localhost:3400`). Nos containers, as portas internas são sempre 3000/3001 e `DATABASE_PATH` é `/data/nexo.sqlite`; as configurações locais de `API_HOST`, `API_PORT`, `API_ORIGIN` e `DATABASE_PATH` são substituídas pelo Compose. Em produção a porta `DOCKER_API_PORT` não é publicada.
+
+A publicação usa `127.0.0.1` para acesso local ou por um proxy reverso no host. Para hospedar com domínio e TLS, configure o proxy para a porta publicada, `WEB_ORIGIN=https://seu-dominio` e `COOKIE_SECURE=true`. Não coloque credenciais nos argumentos de build. A autenticação permanece sendo a demonstração descrita abaixo.
+
+Para executar os testes de domínio/HTTP dentro do ambiente Linux de desenvolvimento:
+
+```sh
+docker compose -f compose.dev.yaml exec api npm test -w @nexo/api
+```
+
+Validação Docker em 28/10/2026: builds de dev e prod aprovados, 19 testes executados com Node.js 22 no container, login pelo proxy nos dois ambientes, HMR do frontend e recarga da API, e preservação de sessão e estado humano após recriar os containers de produção.
+
+Arquivos: [Dockerfile](Dockerfile), [Compose dev](compose.dev.yaml), [Compose prod](compose.prod.yaml) e [decisão arquitetural](docs/adr/0004-docker.md).
 
 ## Contas e roteiro de demonstração
 

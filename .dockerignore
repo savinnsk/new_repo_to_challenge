@@ -1,0 +1,16 @@
+.git
+**/node_modules
+**/.next
+**/dist
+**/*.tsbuildinfo
+**/next-env.d.ts
+**/.env
+**/.env.*
+**/*.sqlite*
+**/.DS_Store
+data
+coverage
+test-results
+playwright-report
+props
+*.pdf
