@@ -22,3 +22,5 @@ WebSocket permitiria push bidirecional, mas adicionaria infraestrutura para o pr
 ## Consequências
 
 Limite de 5 passos, 900 tokens por geração, histórico de 24 mensagens e timeout de 45 segundos controlam consumo. A confirmação e o histórico completo persistem fora do contexto limitado. Histórico longo pode perder nuances para o modelo; resumo de longo prazo é melhoria futura. Interrupção lógica bloqueia efeitos tardios, mas a chamada ao provedor pode continuar até timeout. Execução distribuída exigiria lock compartilhado. Login aceita qualquer senha inclusive para contas de analista do seed: exclusivamente demonstração local, nunca produção.
+
+Rascunhos preparados podem receber confirmação explícita do funcionário durante a pausa. A gravação gera evento de sistema, preserva o estado humano e não habilita ferramentas do agente. Métricas de duração e uso retornadas pelo provedor ficam nas decisões, sem estimar preço monetário.

@@ -1,14 +1,106 @@
-import { z } from 'zod';
-export const categories = ['Acesso', 'Rede e VPN', 'Hardware', 'Software', 'E-mail', 'Outros'] as const;
-export const priorities = ['Crítica', 'Alta', 'Média', 'Baixa'] as const;
-export const ticketInput = z.object({ title: z.string().min(4).max(160), description: z.string().min(10).max(4000), type: z.enum(['INC', 'REQ']), category: z.enum(categories), affected: z.enum(['individual', 'team', 'company']), blocked: z.boolean(), commitmentToday: z.boolean(), workaround: z.boolean() });
+import { z } from "zod";
+export const categories = [
+  "Acesso",
+  "Rede e VPN",
+  "Hardware",
+  "Software",
+  "E-mail",
+  "Outros",
+] as const;
+export const priorities = ["Crítica", "Alta", "Média", "Baixa"] as const;
+export const ticketInput = z.object({
+  title: z.string().min(4).max(160),
+  description: z.string().min(10).max(4000),
+  type: z.enum(["INC", "REQ"]),
+  category: z.enum(categories),
+  affected: z.enum(["individual", "team", "company"]),
+  blocked: z.boolean(),
+  commitmentToday: z.boolean(),
+  workaround: z.boolean(),
+});
 export type TicketInput = z.infer<typeof ticketInput>;
-export type Priority = typeof priorities[number];
-export type User = { id: string; name: string; email: string; role: 'employee' | 'analyst' };
-export type ConversationState = 'AGENT_ACTIVE' | 'WAITING_ANALYST' | 'ANALYST_ACTIVE' | 'CLOSED';
-export type Ticket = TicketInput & { id: string; ownerId: string; priority: Priority; status: 'OPEN' | 'RESOLVED'; createdAt: string; supportUpdatedAt: string; resolvedAt: string | null; dueAt: string; overdue: boolean };
-export type Decision = { action: string; intent: string; confidence: 'alta' | 'média' | 'baixa'; reason: string; result: unknown };
-export type Draft = { id: string; version: number; operation: 'create' | 'update' | 'reopen'; ticketId: string | null; input: TicketInput; priority: Priority; status: 'pending' | 'confirmed' | 'cancelled'; resultId: string | null };
-export type Message = { id: string; role: 'user' | 'assistant' | 'analyst' | 'system'; content: string; createdAt: string; decisions: Decision[] };
-export type Conversation = { id: string; ownerId: string; state: ConversationState; analystId: string | null; summary: string | null; revision: number; userMessages: number; sessionDate: string; updatedAt: string };
-export type ConversationDetail = { conversation: Conversation; messages: Message[]; drafts: Draft[]; tickets: Ticket[] };
+export type Priority = (typeof priorities)[number];
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  role: "employee" | "analyst";
+};
+export type ConversationState =
+  "AGENT_ACTIVE" | "WAITING_ANALYST" | "ANALYST_ACTIVE" | "CLOSED";
+export type Ticket = TicketInput & {
+  id: string;
+  ownerId: string;
+  priority: Priority;
+  status: "OPEN" | "RESOLVED";
+  createdAt: string;
+  supportUpdatedAt: string;
+  slaStartedAt: string;
+  resolvedAt: string | null;
+  dueAt: string;
+  overdue: boolean;
+};
+export type Decision = {
+  action: string;
+  intent: string;
+  confidence: "alta" | "média" | "baixa";
+  reason: string;
+  result: unknown;
+};
+export type Draft = {
+  id: string;
+  version: number;
+  operation: "create" | "update" | "reopen";
+  ticketId: string | null;
+  input: TicketInput;
+  priority: Priority;
+  status: "pending" | "confirmed" | "cancelled";
+  resultId: string | null;
+};
+export type Message = {
+  id: string;
+  role: "user" | "assistant" | "analyst" | "system";
+  content: string;
+  createdAt: string;
+  decisions: Decision[];
+};
+export type Conversation = {
+  id: string;
+  ownerId: string;
+  state: ConversationState;
+  analystId: string | null;
+  summary: string | null;
+  revision: number;
+  userMessages: number;
+  sessionDate: string;
+  updatedAt: string;
+};
+export type ConversationDetail = {
+  conversation: Conversation;
+  messages: Message[];
+  drafts: Draft[];
+  tickets: Ticket[];
+};
+
+export const ticketSchema = ticketInput.extend({
+  id: z.string(),
+  ownerId: z.string(),
+  priority: z.enum(priorities),
+  status: z.enum(["OPEN", "RESOLVED"]),
+  createdAt: z.string().datetime(),
+  supportUpdatedAt: z.string().datetime(),
+  slaStartedAt: z.string().datetime(),
+  resolvedAt: z.string().datetime().nullable(),
+  dueAt: z.string().datetime(),
+  overdue: z.boolean(),
+});
+export const draftSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int().positive(),
+  operation: z.enum(["create", "update", "reopen"]),
+  ticketId: z.string().nullable(),
+  input: ticketInput,
+  priority: z.enum(priorities),
+  status: z.enum(["pending", "confirmed", "cancelled"]),
+  resultId: z.string().nullable(),
+});

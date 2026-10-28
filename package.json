@@ -16,15 +16,20 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint apps packages",
     "test": "npm run test -w @nexo/api",
-    "seed": "npm run seed -w @nexo/api"
+    "seed": "npm run seed -w @nexo/api",
+    "test:e2e": "playwright test",
+    "format": "prettier --write apps packages tests playwright.config.ts eslint.config.js",
+    "format:check": "prettier --check apps packages tests playwright.config.ts eslint.config.js"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "tsx": "^4.21.0",
-    "concurrently": "^9.2.1",
+    "@eslint/js": "^9.39.0",
+    "@playwright/test": "^1.64.1",
     "@types/node": "^22.19.0",
+    "concurrently": "^9.2.1",
     "eslint": "^9.39.0",
-    "typescript-eslint": "^8.46.0",
-    "@eslint/js": "^9.39.0"
+    "prettier": "^3.9.10",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.0"
   }
 }

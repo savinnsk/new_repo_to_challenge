@@ -10,8 +10,5 @@
     "rootDir": "../..",
     "rewriteRelativeImportExtensions": true
   },
-  "include": [
-    "src/**/*.ts",
-    "../../packages/contracts/src/**/*.ts"
-  ]
+  "include": ["src/**/*.ts", "../../packages/contracts/src/**/*.ts"]
 }

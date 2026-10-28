@@ -1,4 +1,15 @@
-import type { Metadata } from 'next';
-import './globals.css';
-export const metadata: Metadata = { title: 'Nexo Assist — Service desk de TI', description: 'Seu atendimento de TI em uma conversa.' };
-export default function Layout({ children }: Readonly<{ children: React.ReactNode }>) { return <html lang="pt-BR"><body>{children}</body></html>; }
+import type { Metadata } from "next";
+import "./globals.css";
+export const metadata: Metadata = {
+  title: "Nexo Assist — Service desk de TI",
+  description: "Seu atendimento de TI em uma conversa.",
+};
+export default function Layout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html lang="pt-BR">
+      <body>{children}</body>
+    </html>
+  );
+}

@@ -1,17 +1,368 @@
-'use client';
-import { useEffect, useRef, useState } from 'react';
-import { ArrowUp, CheckCircle2, Headphones, LogOut, MessageSquare, RotateCcw, Search } from 'lucide-react';
-import type { Conversation, ConversationDetail, User } from '@nexo/contracts';
-import { api } from '../lib/api';
-import { Avatar, Badge, Logo, MessageBubble, TicketCard, date } from './shared';
+"use client";
+import { useEffect, useRef, useState } from "react";
+import {
+  ArrowUp,
+  CheckCircle2,
+  Headphones,
+  LogOut,
+  MessageSquare,
+  RotateCcw,
+  Search,
+} from "lucide-react";
+import type { Conversation, ConversationDetail, User } from "@nexo/contracts";
+import { api } from "../lib/api";
+import { Avatar, Badge, Logo, MessageBubble, TicketCard, date } from "./shared";
 type QueueItem = Conversation & { owner: User; lastMessage: string };
-export function AnalystConsole({ user, onLogout }: {user:User;onLogout:()=>Promise<void>}) {
-  const [queue,setQueue] = useState<QueueItem[]>([]); const [detail,setDetail] = useState<ConversationDetail|null>(null); const [selected,setSelected] = useState<string|null>(null); const [filter,setFilter] = useState('waiting'); const [query,setQuery] = useState(''); const [text,setText] = useState(''); const [error,setError] = useState(''); const [busy,setBusy] = useState(false); const end = useRef<HTMLDivElement>(null);
-  useEffect(()=>{ let alive=true; async function refresh(){try{ const data=await api<{conversations:QueueItem[]}>('/conversations');if(alive){setQueue(data.conversations);if(!selected){const first=data.conversations.find(c=>c.state==='WAITING_ANALYST')??data.conversations[0];if(first)setSelected(first.id);}}if(selected){const next=await api<ConversationDetail>(`/conversations/${selected}`);if(alive)setDetail(next);}}catch(e){if(alive)setError((e as Error).message);}}void refresh();const timer=setInterval(()=>void refresh(),3000);return()=>{alive=false;clearInterval(timer);};},[selected]);
-  useEffect(()=>{end.current?.scrollIntoView({behavior:'smooth'});},[detail?.messages.length]);
-  async function action(value:'claim'|'release'|'close'){if(!selected)return;setBusy(true);setError('');try{setDetail(await api<ConversationDetail>(`/analyst/conversations/${selected}/${value}`,'POST'));const data=await api<{conversations:QueueItem[]}>('/conversations');setQueue(data.conversations);}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
-  async function send(){if(!selected||!text.trim())return;setBusy(true);setError('');try{setDetail(await api<ConversationDetail>(`/analyst/conversations/${selected}/messages`,'POST',{content:text}));setText('');}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
-  const visible=queue.filter(c=>(filter==='all'||filter==='waiting'&&c.state==='WAITING_ANALYST'||filter==='agent'&&c.state==='AGENT_ACTIVE'||filter==='mine'&&c.analystId===user.id)&&`${c.owner.name} ${c.lastMessage} ${c.summary??''}`.toLowerCase().includes(query.toLowerCase()));
-  const owner=queue.find(c=>c.id===selected)?.owner;const c=detail?.conversation;const mine=c?.state==='ANALYST_ACTIVE'&&c.analystId===user.id;
-  return <main className="console-shell"><aside className="console-rail"><Logo compact/><button aria-label="Conversas" className="rail-current"><MessageSquare size={21}/></button><div className="rail-bottom"><Avatar name={user.name}/><button title="Sair" aria-label="Sair" onClick={()=>void onLogout()}><LogOut size={18}/></button></div></aside><aside className="queue-panel"><header><h1>Conversas</h1><span className="badge green"><i/>Disponível</span></header><label className="search-field"><Search size={16}/><input placeholder="Pesquisar conversa ou chamado" aria-label="Pesquisar conversa" value={query} onChange={e=>setQuery(e.target.value)}/></label><nav className="queue-filters">{[{id:'all',label:'Todas'},{id:'waiting',label:`Para você ${queue.filter(c=>c.state==='WAITING_ANALYST').length}`},{id:'agent',label:'Com o agente'},{id:'mine',label:'Minhas'}].map(f=><button key={f.id} className={filter===f.id?'selected':''} onClick={()=>setFilter(f.id)}>{f.label}</button>)}</nav><div className="queue-list">{visible.length===0&&<div className="empty-state">Nenhuma conversa neste filtro.</div>}{visible.map(item=><button className={`queue-item ${selected===item.id?'active':''}`} key={item.id} onClick={()=>{setSelected(item.id);setDetail(null);setError('');}}><Avatar name={item.owner.name}/><div><div className="queue-name"><strong>{item.owner.name}</strong><time>{date(item.updatedAt).split(',').at(-1)}</time></div><p>{item.lastMessage}</p><small className={item.state==='WAITING_ANALYST'?'warning':''}>{item.analystId===user.id?'● Você está atendendo':item.state==='WAITING_ANALYST'?'● Transferida · agente pausado':item.state==='AGENT_ACTIVE'?'● Agente atendendo':'● Encerrada'}</small></div></button>)}</div></aside><section className="analyst-conversation">{!c?<div className="empty-state"><Headphones size={32}/><h2>Seu próximo atendimento começa aqui</h2><p>Selecione uma conversa na lista. O contexto acompanha cada transferência.</p></div>:<><header className="analyst-header"><div className="person-title"><Avatar name={owner?.name??'Funcionário'}/><div><strong>{owner?.name}</strong><small>{owner?.email}</small></div></div><Badge state={c.state}/></header><div className="analyst-scroll"><div className="analyst-messages">{c.summary&&<details className="handoff-summary" open><summary>Resumo da transferência</summary><p>{c.summary}</p></details>}{detail?.messages.map(m=><MessageBubble key={m.id} message={m}/>)}<div ref={end}/></div></div><footer className="analyst-composer">{error&&<div className="error" role="alert">{error}</div>}<div className="analyst-actions"><div><strong>{mine?'Você assumiu este atendimento':c.state==='WAITING_ANALYST'?'Aguardando um atendente':c.state==='AGENT_ACTIVE'?'Agente atendendo':'Atendimento indisponível'}</strong><small>{c.state==='WAITING_ANALYST'||c.state==='ANALYST_ACTIVE'?'Agente pausado':'Consulte o histórico e os chamados ao lado.'}</small></div><div className="actions">{c.state==='WAITING_ANALYST'&&<><button disabled={busy} onClick={()=>void action('release')}><RotateCcw size={14}/>Devolver ao agente</button><button className="primary" disabled={busy} onClick={()=>void action('claim')}><Headphones size={15}/>Assumir atendimento</button></>}{mine&&<><button disabled={busy} onClick={()=>void action('release')}><RotateCcw size={14}/>Devolver ao agente</button><button className="danger" disabled={busy} onClick={()=>void action('close')}><CheckCircle2 size={14}/>Encerrar</button></>}</div></div><form className="composer" onSubmit={e=>{e.preventDefault();void send();}}><input aria-label="Mensagem do analista" placeholder={mine?'Escreva sua resposta…':'Assuma o atendimento para responder'} disabled={!mine||busy} value={text} maxLength={4000} onChange={e=>setText(e.target.value)}/><button className="primary" aria-label="Enviar resposta" disabled={!mine||busy||!text.trim()}><ArrowUp size={18}/></button></form></footer></>}</section><aside className="analyst-tickets"><header><h2>Chamados {owner?`de ${owner.name.split(' ')[0]}`:''}</h2><small>{detail?.tickets.filter(t=>t.status==='OPEN').length??0} abertos · {detail?.tickets.filter(t=>t.status==='RESOLVED').length??0} encerrados</small></header><div className="analyst-ticket-list">{detail?.tickets.map(ticket=><TicketCard key={ticket.id} ticket={ticket}/>)}{!detail&&<p>Selecione um atendimento para consultar os chamados.</p>}</div></aside>{error&&!c&&<div className="floating-error error" role="alert">{error}</div>}</main>;
+export function AnalystConsole({
+  user,
+  onLogout,
+}: {
+  user: User;
+  onLogout: () => Promise<void>;
+}) {
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [detail, setDetail] = useState<ConversationDetail | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [filter, setFilter] = useState("waiting");
+  const [query, setQuery] = useState("");
+  const [text, setText] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const end = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let alive = true;
+    async function refresh() {
+      try {
+        const data = await api<{ conversations: QueueItem[] }>(
+          "/conversations",
+        );
+        if (alive) {
+          setQueue(data.conversations);
+          if (!selected) {
+            const first =
+              data.conversations.find((c) => c.state === "WAITING_ANALYST") ??
+              data.conversations[0];
+            if (first) setSelected(first.id);
+          }
+        }
+        if (selected) {
+          const next = await api<ConversationDetail>(
+            `/conversations/${selected}`,
+          );
+          if (alive) setDetail(next);
+        }
+      } catch (e) {
+        if (alive) setError((e as Error).message);
+      }
+    }
+    void refresh();
+    const timer = setInterval(() => void refresh(), 3000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [selected]);
+  useEffect(() => {
+    end.current?.scrollIntoView({ behavior: "smooth" });
+  }, [detail?.messages.length]);
+  async function action(value: "claim" | "release" | "close") {
+    if (!selected) return;
+    setBusy(true);
+    setError("");
+    try {
+      setDetail(
+        await api<ConversationDetail>(
+          `/analyst/conversations/${selected}/${value}`,
+          "POST",
+        ),
+      );
+      const data = await api<{ conversations: QueueItem[] }>("/conversations");
+      setQueue(data.conversations);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function send() {
+    if (!selected || !text.trim()) return;
+    setBusy(true);
+    setError("");
+    try {
+      setDetail(
+        await api<ConversationDetail>(
+          `/analyst/conversations/${selected}/messages`,
+          "POST",
+          { content: text },
+        ),
+      );
+      setText("");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const visible = queue.filter(
+    (c) =>
+      (filter === "all" ||
+        (filter === "waiting" && c.state === "WAITING_ANALYST") ||
+        (filter === "agent" && c.state === "AGENT_ACTIVE") ||
+        (filter === "mine" && c.analystId === user.id)) &&
+      `${c.owner.name} ${c.lastMessage} ${c.summary ?? ""}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  );
+  const owner = queue.find((c) => c.id === selected)?.owner;
+  const c = detail?.conversation;
+  const mine = c?.state === "ANALYST_ACTIVE" && c.analystId === user.id;
+  return (
+    <main className="console-shell">
+      <aside className="console-rail">
+        <Logo compact />
+        <button aria-label="Conversas" className="rail-current">
+          <MessageSquare size={21} />
+        </button>
+        <div className="rail-bottom">
+          <Avatar name={user.name} />
+          <button
+            title="Sair"
+            aria-label="Sair"
+            onClick={() => void onLogout()}
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
+      </aside>
+      <aside className="queue-panel">
+        <header>
+          <h1>Conversas</h1>
+          <span className="badge green">
+            <i />
+            Disponível
+          </span>
+        </header>
+        <label className="search-field">
+          <Search size={16} />
+          <input
+            placeholder="Pesquisar conversa ou chamado"
+            aria-label="Pesquisar conversa"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+        <nav className="queue-filters">
+          {[
+            { id: "all", label: "Todas" },
+            {
+              id: "waiting",
+              label: `Para você ${queue.filter((c) => c.state === "WAITING_ANALYST").length}`,
+            },
+            { id: "agent", label: "Com o agente" },
+            { id: "mine", label: "Minhas" },
+          ].map((f) => (
+            <button
+              key={f.id}
+              className={filter === f.id ? "selected" : ""}
+              onClick={() => setFilter(f.id)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </nav>
+        <div className="queue-list">
+          {visible.length === 0 && (
+            <div className="empty-state">Nenhuma conversa neste filtro.</div>
+          )}
+          {visible.map((item) => (
+            <button
+              className={`queue-item ${selected === item.id ? "active" : ""}`}
+              key={item.id}
+              onClick={() => {
+                setSelected(item.id);
+                setDetail(null);
+                setError("");
+              }}
+            >
+              <Avatar name={item.owner.name} />
+              <div>
+                <div className="queue-name">
+                  <strong>{item.owner.name}</strong>
+                  <time>{date(item.updatedAt).split(",").at(-1)}</time>
+                </div>
+                <p>{item.lastMessage}</p>
+                <small
+                  className={item.state === "WAITING_ANALYST" ? "warning" : ""}
+                >
+                  {item.analystId === user.id
+                    ? "● Você está atendendo"
+                    : item.state === "WAITING_ANALYST"
+                      ? "● Transferida · agente pausado"
+                      : item.state === "AGENT_ACTIVE"
+                        ? "● Agente atendendo"
+                        : "● Encerrada"}
+                </small>
+              </div>
+            </button>
+          ))}
+        </div>
+      </aside>
+      <section className="analyst-conversation">
+        {!c ? (
+          <div className="empty-state">
+            <Headphones size={32} />
+            <h2>Seu próximo atendimento começa aqui</h2>
+            <p>
+              Selecione uma conversa na lista. O contexto acompanha cada
+              transferência.
+            </p>
+          </div>
+        ) : (
+          <>
+            <header className="analyst-header">
+              <div className="person-title">
+                <Avatar name={owner?.name ?? "Funcionário"} />
+                <div>
+                  <strong>{owner?.name}</strong>
+                  <small>{owner?.email}</small>
+                </div>
+              </div>
+              <Badge state={c.state} />
+            </header>
+            <div className="analyst-scroll">
+              <div className="analyst-messages">
+                {c.summary && (
+                  <details className="handoff-summary" open>
+                    <summary>Resumo da transferência</summary>
+                    <p>{c.summary}</p>
+                  </details>
+                )}
+                {detail?.messages.map((m) => (
+                  <MessageBubble key={m.id} message={m} />
+                ))}
+                <div ref={end} />
+              </div>
+            </div>
+            <footer className="analyst-composer">
+              {error && (
+                <div className="error" role="alert">
+                  {error}
+                </div>
+              )}
+              <div className="analyst-actions">
+                <div>
+                  <strong>
+                    {mine
+                      ? "Você assumiu este atendimento"
+                      : c.state === "WAITING_ANALYST"
+                        ? "Aguardando um atendente"
+                        : c.state === "AGENT_ACTIVE"
+                          ? "Agente atendendo"
+                          : "Atendimento indisponível"}
+                  </strong>
+                  <small>
+                    {c.state === "WAITING_ANALYST" ||
+                    c.state === "ANALYST_ACTIVE"
+                      ? "Agente pausado"
+                      : "Consulte o histórico e os chamados ao lado."}
+                  </small>
+                </div>
+                <div className="actions">
+                  {c.state === "WAITING_ANALYST" && (
+                    <>
+                      <button
+                        disabled={busy}
+                        onClick={() => void action("release")}
+                      >
+                        <RotateCcw size={14} />
+                        Devolver ao agente
+                      </button>
+                      <button
+                        className="primary"
+                        disabled={busy}
+                        onClick={() => void action("claim")}
+                      >
+                        <Headphones size={15} />
+                        Assumir atendimento
+                      </button>
+                    </>
+                  )}
+                  {mine && (
+                    <>
+                      <button
+                        disabled={busy}
+                        onClick={() => void action("release")}
+                      >
+                        <RotateCcw size={14} />
+                        Devolver ao agente
+                      </button>
+                      <button
+                        className="danger"
+                        disabled={busy}
+                        onClick={() => void action("close")}
+                      >
+                        <CheckCircle2 size={14} />
+                        Encerrar
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+              <form
+                className="composer"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void send();
+                }}
+              >
+                <input
+                  aria-label="Mensagem do analista"
+                  placeholder={
+                    mine
+                      ? "Escreva sua resposta…"
+                      : "Assuma o atendimento para responder"
+                  }
+                  disabled={!mine || busy}
+                  value={text}
+                  maxLength={4000}
+                  onChange={(e) => setText(e.target.value)}
+                />
+                <button
+                  className="primary"
+                  aria-label="Enviar resposta"
+                  disabled={!mine || busy || !text.trim()}
+                >
+                  <ArrowUp size={18} />
+                </button>
+              </form>
+            </footer>
+          </>
+        )}
+      </section>
+      <aside className="analyst-tickets">
+        <header>
+          <h2>Chamados {owner ? `de ${owner.name.split(" ")[0]}` : ""}</h2>
+          <small>
+            {detail?.tickets.filter((t) => t.status === "OPEN").length ?? 0}{" "}
+            abertos ·{" "}
+            {detail?.tickets.filter((t) => t.status === "RESOLVED").length ?? 0}{" "}
+            encerrados
+          </small>
+        </header>
+        <div className="analyst-ticket-list">
+          {detail?.tickets.map((ticket) => (
+            <TicketCard key={ticket.id} ticket={ticket} />
+          ))}
+          {!detail && (
+            <p>Selecione um atendimento para consultar os chamados.</p>
+          )}
+        </div>
+      </aside>
+      {error && !c && (
+        <div className="floating-error error" role="alert">
+          {error}
+        </div>
+      )}
+    </main>
+  );
 }
