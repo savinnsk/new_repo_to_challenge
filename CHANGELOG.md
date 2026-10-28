@@ -23,6 +23,8 @@
 
 ### Changed
 
+- README descreve deploy local com Docker e Cloudflare Tunnel nomeado, domínio HTTPS, cookies, DNS e validação do streaming.
+
 - API aceita `API_HOST` para comunicação entre containers, preservando o padrão local.
 
 - Scripts em `script/` para instalar e buildar, iniciar API e frontend em produção e executar o fluxo completo com encerramento coordenado.

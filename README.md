@@ -100,6 +100,76 @@ Validação Docker em 28/10/2026: builds de dev e prod aprovados, 19 testes exec
 
 Arquivos: [Dockerfile](Dockerfile), [Compose dev](compose.dev.yaml), [Compose prod](compose.prod.yaml) e [decisão arquitetural](docs/adr/0004-docker.md).
 
+## Deploy local com Cloudflare Tunnel
+
+O deploy será executado na máquina local com o Compose de produção e `cloudflared` no **host**, publicando um domínio HTTPS. Fluxo: navegador → Cloudflare Tunnel → `http://127.0.0.1:3000` → Next.js → API na rede Docker. O SQLite permanece no volume local de produção.
+
+Use um **túnel nomeado com domínio próprio**: Quick Tunnels (`trycloudflare.com`) não suportam SSE, usado pelo streaming do chat. [Limitações oficiais dos Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/).
+
+### 1. Configurar e iniciar a aplicação
+
+No `.env` da raiz, substitua o domínio de exemplo pelo endereço público real, sem barra final:
+
+```dotenv
+WEB_ORIGIN=https://assist.seu-dominio.com
+COOKIE_SECURE=true
+DOCKER_WEB_PORT=3000
+# Preencha também OPENAI_API_KEY para habilitar o agente.
+```
+
+Suba a aplicação:
+
+```sh
+docker compose -f compose.prod.yaml up --build -d --wait
+curl --fail http://127.0.0.1:3000/api/health
+```
+
+`WEB_ORIGIN` identifica a origem pública do navegador; o proxy interno continua usando `http://api:3001`. O HTTPS termina na Cloudflare e a conexão local com o frontend usa HTTP. Após mudar o `.env`, execute novamente `docker compose -f compose.prod.yaml up -d --wait` para recriar os serviços com as novas variáveis.
+
+### 2. Criar o túnel e o DNS
+
+É necessário ter uma conta e um domínio com DNS gerenciado pela Cloudflare. No macOS:
+
+```sh
+brew install cloudflared
+cloudflared tunnel login
+cloudflared tunnel create nexo-assist
+cloudflared tunnel route dns nexo-assist assist.seu-dominio.com
+```
+
+Guarde o UUID e o caminho do arquivo de credenciais informados na criação. Se já existir um túnel, reutilize-o e configure nele o hostname apontando para `http://127.0.0.1:3000`. [Guia oficial de criação de túnel](https://developers.cloudflare.com/tunnel/features/locally-managed-tunnels/create-local-tunnel/).
+
+### 3. Configurar e executar o conector
+
+Crie `~/.cloudflared/nexo-assist.yml` fora do repositório, substituindo UUID, domínio e caminho absoluto das credenciais:
+
+```yaml
+tunnel: UUID-DO-TUNEL
+credentials-file: /Users/seu-usuario/.cloudflared/UUID-DO-TUNEL.json
+
+ingress:
+  - hostname: assist.seu-dominio.com
+    service: http://127.0.0.1:3000
+  - service: http_status:404
+```
+
+Valide e execute:
+
+```sh
+cloudflared tunnel --config "$HOME/.cloudflared/nexo-assist.yml" ingress validate
+cloudflared tunnel --config "$HOME/.cloudflared/nexo-assist.yml" run nexo-assist
+```
+
+Se alterar `DOCKER_WEB_PORT`, ajuste também a porta em `service`. A regra final responde 404 para hostnames sem correspondência. Credenciais, certificado e tokens do túnel devem permanecer fora do Git. [Referência oficial de configuração](https://developers.cloudflare.com/tunnel/features/locally-managed-tunnels/configuration-file/).
+
+### 4. Conferir o acesso público
+
+Abra `https://assist.seu-dominio.com` e verifique login, mensagens em streaming, transferência e console do analista. Com `COOKIE_SECURE=true`, use o domínio HTTPS para o atendimento. Erro 403 em mutações pede conferir `WEB_ORIGIN`; erro 502 pede conferir containers e destino local do túnel.
+
+Mantenha a máquina ligada, com rede, Docker e `cloudflared` em execução. Neste roteiro o conector fica no terminal; para iniciá-lo automaticamente, siga a [instalação como serviço no macOS](https://developers.cloudflare.com/tunnel/features/locally-managed-tunnels/run-as-a-service/macos/). A autenticação da aplicação continua sendo demonstrativa, como descrito abaixo.
+
+O domínio é ilustrativo: o túnel e o acesso público ainda precisam ser configurados e validados no ambiente de deploy.
+
 ## Contas e roteiro de demonstração
 
 Todas aceitam qualquer senha **não vazia**, conforme o login simulado do desafio. Isso inclui os analistas: não é autenticação para produção.
@@ -193,7 +263,7 @@ Os testes de domínio e HTTP usam SQLite real e modelo controlado, sem custo ext
 
 A suíte cobre SLA, confirmação, idempotência, edição, reabertura e sua fronteira de 7 dias, privacidade, indisponibilidade, persistência, estados humanos, respostas tardias e limite de mensagens. Os testes de navegador cobrem revisão de rascunho, retomada, transferência entre duas sessões, atendimento humano e viewport móvel. Veja [cenários de avaliação](docs/evaluation.md).
 
-A integração com o provedor real precisa ser exercitada com uma chave válida; testes controlados não atestam a qualidade linguística ou de decisão do modelo em produção. O repositório não inclui chave nem deploy.
+A integração com o provedor real precisa ser exercitada com uma chave válida; testes controlados não atestam a qualidade linguística ou de decisão do modelo em produção. O repositório não inclui chaves; o deploy local com Cloudflare Tunnel segue o roteiro acima e terá sua URL informada após a publicação.
 
 ## Com mais tempo
 
