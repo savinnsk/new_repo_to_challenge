@@ -11,3 +11,4 @@
 - Agente Mastra com ferramentas auditáveis, contexto autorizado, limite de passos e streaming SSE.
 - API de login demonstrativo, cookies HttpOnly, rascunhos, transferência e atendimento humano.
 - Testes HTTP e de orquestração com modelo controlado, sem custo externo.
+- Login e chat Next.js seguindo as capturas, com histórico, cards, streaming e rascunhos editáveis.

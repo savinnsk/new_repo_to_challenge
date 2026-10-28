@@ -48,3 +48,7 @@ Mastra com `openai/gpt-4.1-mini` configurável por `LLM_MODEL`: escolha inicial 
 Sessão = conversa por dia de São Paulo, até 30 mensagens do funcionário; respostas, eventos e confirmações por botão não contam. Dia seguinte renova quota e mantém histórico. Cookies HttpOnly/SameSite, token armazenado como hash, validação de origem e rate limit protegem o protótipo; login é simulado e não deve ser usado em produção.
 
 O serviço legado permite falha reproduzível por `LEGACY_FAILURE_MS`, espera com backoff e no máximo três tentativas; gravações confirmadas são idempotentes por rascunho. Consulte a API através de `/api` no Next.js para manter cookies no mesmo domínio.
+
+## Demonstração
+
+Use qualquer senha não vazia para `ana.souza@nexo.com.br` ou `carla.mendes@nexo.com.br`. O perfil mostra a identidade autenticada. No chat, consulte cards, selecione um chamado, converse para preparar um rascunho, revise os campos e confirme. Ações e evidências ficam em “Ver detalhes das decisões”. Sem chave do modelo é possível ver os chamados e solicitar transferência.
